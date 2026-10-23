@@ -34,7 +34,8 @@ async function bundle(document) {
   const number = document.split("-")[1];
   const order = await siesa(`/get-production-order-print?document_type=MPC&document_number=${number}`);
   if (!order) return null;
-  const operations = (await siesa(`/get-production-order-operations?op_document=${document}`)) || [];
+  const found = await siesa(`/get-production-order-operations?op_document=${document}`);
+  const operations = Array.isArray(found) ? found : [];
 
   const byContract = new Map();
   for (const op of operations) {
