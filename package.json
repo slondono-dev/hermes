@@ -1,0 +1,12 @@
+{
+  "name": "hermes",
+  "private": true,
+  "description": "Carries SIESA production orders (MPC) and their contracts (MCS) from APISIESA to Clover",
+  "main": "hermes.js",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node --env-file=.env hermes.js",
+    "once": "node --env-file=.env hermes.js --once",
+    "test": "node --test"
+  }
+}
