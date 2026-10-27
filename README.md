@@ -18,6 +18,9 @@ node --env-file=.env hermes.js --print MPC-12734   # show one bundle, send nothi
 
 An MPC with no MCS yet is skipped (no confeccionista to show it to). Unchanged bundles are not resent (`state.json` keeps a hash per MPC).
 
+## Photos (Ropero → B2)
+For each reference of the MPC, Hermes asks Ropero `GET {ROPERO_URL}/techpack-images/{reference}`, downloads up to `PHOTOS_PER_REFERENCE` images and uploads them once to the private B2 bucket as `refs/{reference}/{file}` (`b2.js`, native API, no dependencies). The bundle carries `photos: [{ reference, key, source }]`; Clover signs short-lived links to show them. Without `B2_*` the bundle goes without photos.
+
 ## What it sends (Clover)
 `POST {CLOVER_URL}/api/hermes/production-orders` with `Authorization: Bearer {CLOVER_TOKEN}`:
 
@@ -32,6 +35,7 @@ An MPC with no MCS yet is skipped (no confeccionista to show it to). Unchanged b
     external_cut, from_leftover, point_of_sale, packages: { S: [20, 20, 6] }, note_date, other: [],
     package_mismatches: [{ size, packages, ordered }] },
   contracts: [ MCS print (supplier, items, totals, notes) + operations: [{ operation_number, description }] ],
+  photos: [{ reference, key, source }],
   hash, sent_at
 }
 ```

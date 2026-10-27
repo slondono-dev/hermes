@@ -4,6 +4,7 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const { parseObservations, packageMismatches } = require("./observations");
+const { photosFor } = require("./photos");
 
 const env = (name, fallback) => {
   const value = process.env[name] ?? fallback;
@@ -30,7 +31,7 @@ async function siesa(path) {
 }
 
 // One MPC plus every MCS that contracts one of its operations.
-async function bundle(document) {
+async function bundle(document, uploaded = new Set()) {
   const number = document.split("-")[1];
   const order = await siesa(`/get-production-order-print?document_type=MPC&document_number=${number}`);
   if (!order) return null;
@@ -54,7 +55,12 @@ async function bundle(document) {
 
   const observations = parseObservations(order.notes);
   observations.package_mismatches = packageMismatches(observations.packages, order.items);
-  return { production_order: order, observations, contracts };
+  // Photos never block an order: if Ropero or B2 fail, it goes without them.
+  const photos = await photosFor(order, uploaded).catch((err) => {
+    console.error(new Date().toISOString(), document, `photos: ${err.message}`);
+    return [];
+  });
+  return { production_order: order, observations, contracts, photos };
 }
 
 function loadState() {
@@ -69,12 +75,13 @@ async function syncOnce() {
   const since = new Date(Date.now() - SYNC_DAYS * 86_400_000).toISOString().slice(0, 10);
   const orders = (await siesa(`/get-production-orders?document_type=MPC&start_document_date=${since}`)) || [];
   const state = loadState();
+  const uploaded = new Set(state._photos || []);
   let sent = 0;
   let failed = 0;
 
   for (const { document } of orders) {
     try {
-      const payload = await bundle(document);
+      const payload = await bundle(document, uploaded);
       // ponytail: no MCS yet means no confeccionista to show it to; it goes out once one exists.
       if (!payload || payload.contracts.length === 0) continue;
       const hash = crypto.createHash("sha256").update(JSON.stringify(payload)).digest("hex");
@@ -88,6 +95,7 @@ async function syncOnce() {
       });
       if (!res.ok) throw new Error(`Clover ${res.status} ${(await res.text()).slice(0, 200)}`);
       state[document] = hash;
+      state._photos = [...uploaded];
       fs.writeFileSync(STATE_FILE, JSON.stringify(state));
       sent++;
     } catch (err) {
