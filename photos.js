@@ -1,5 +1,5 @@
 // Garment photos for an MPC: Ropero (ropero.dsx.com.co) knows the techpack images of
-// each reference; Hermes copies them to B2 once and tells Clover their keys.
+// each reference; Hermes copies them to B2 once and tells Prisma Proveedores their keys.
 const b2 = require("./b2");
 
 const ROPERO = (process.env.ROPERO_URL || "https://ropero.dsx.com.co").replace(/\/$/, "");

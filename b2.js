@@ -1,5 +1,5 @@
 // Backblaze B2 (native API, no dependencies): Hermes uploads garment photos to the
-// private bucket; Clover later signs short-lived download links for them.
+// private bucket; Prisma Proveedores later signs short-lived download links for them.
 const crypto = require("node:crypto");
 
 let session = null;

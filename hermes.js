@@ -1,6 +1,6 @@
 // Hermes: lives inside the DISEX network next to APISIESA, reads each MPC with
-// its MCS contracts and pushes them to Clover, which is on the internet.
-// Clover never reaches SIESA; Hermes only reads SIESA and only talks out.
+// its MCS contracts and pushes them to Prisma Proveedores, which is on the internet.
+// Prisma Proveedores never reaches SIESA; Hermes only reads SIESA and only talks out.
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const { parseObservations, packageMismatches } = require("./observations");
@@ -14,8 +14,9 @@ const env = (name, fallback) => {
 const SIESA = env("APISIESA_URL").replace(/\/$/, "");
 const SIESA_TOKEN = env("APISIESA_TOKEN");
 const CIA = env("APISIESA_CIA", "1");
-const CLOVER = env("CLOVER_URL").replace(/\/$/, "");
-const CLOVER_TOKEN = env("CLOVER_TOKEN");
+// Prisma Proveedores (formerly Clover). CLOVER_* still works until the .env is updated.
+const PROVEEDORES = env("PROVEEDORES_URL", process.env.CLOVER_URL).replace(/\/$/, "");
+const PROVEEDORES_TOKEN = env("PROVEEDORES_TOKEN", process.env.CLOVER_TOKEN);
 const SYNC_DAYS = Number(env("SYNC_DAYS", "45"));
 const POLL_SECONDS = Number(env("POLL_SECONDS", "300"));
 const STATE_FILE = env("STATE_FILE", `${__dirname}/state.json`);
@@ -87,13 +88,13 @@ async function syncOnce() {
       const hash = crypto.createHash("sha256").update(JSON.stringify(payload)).digest("hex");
       if (state[document] === hash) continue;
 
-      const res = await fetch(`${CLOVER}/api/hermes/production-orders`, {
+      const res = await fetch(`${PROVEEDORES}/api/hermes/production-orders`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${CLOVER_TOKEN}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${PROVEEDORES_TOKEN}`, "Content-Type": "application/json" },
         body: JSON.stringify({ ...payload, hash, sent_at: new Date().toISOString() }),
         signal: AbortSignal.timeout(60_000),
       });
-      if (!res.ok) throw new Error(`Clover ${res.status} ${(await res.text()).slice(0, 200)}`);
+      if (!res.ok) throw new Error(`Prisma Proveedores ${res.status} ${(await res.text()).slice(0, 200)}`);
       state[document] = hash;
       state._photos = [...uploaded];
       fs.writeFileSync(STATE_FILE, JSON.stringify(state));
@@ -108,7 +109,7 @@ async function syncOnce() {
 
 async function main() {
   if (process.argv.includes("--print")) {
-    // Shows what would go to Clover for one MPC, without sending: node hermes.js --print MPC-12734
+    // Shows what would go to Prisma Proveedores for one MPC, without sending: node hermes.js --print MPC-12734
     const doc = process.argv[process.argv.indexOf("--print") + 1];
     console.log(JSON.stringify(await bundle(doc), null, 2));
     return;

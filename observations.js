@@ -1,4 +1,4 @@
-// Reads the free-text "Observaciones" of a SIESA MPC into fields Clover can show.
+// Reads the free-text "Observaciones" of a SIESA MPC into fields Prisma Proveedores can show.
 // Planners type these by hand, so keywords come with typos (RECUEPRO, RESPOSO,
 // PAQUEETS...): words are matched by edit distance, not exact spelling.
 

@@ -1,9 +1,9 @@
 # Hermes
 
-Messenger between SIESA and Clover. Runs inside the DISEX network next to APISIESA, reads every MPC (orden de producción confección) with the MCS (orden de compra paquete completo) that contract its operations, and pushes them to Clover. Clover never reaches SIESA. No dependencies, Node 22.
+Messenger between SIESA and Prisma Proveedores. Runs inside the DISEX network next to APISIESA, reads every MPC (orden de producción confección) with the MCS (orden de compra paquete completo) that contract its operations, and pushes them to Prisma Proveedores. Prisma Proveedores never reaches SIESA. No dependencies, Node 22.
 
 ```
-cp .env.example .env   # fill APISIESA_TOKEN and CLOVER_TOKEN
+cp .env.example .env   # fill APISIESA_TOKEN and PROVEEDORES_TOKEN
 npm test
 npm run once           # one pass
 npm start              # every POLL_SECONDS
@@ -19,10 +19,10 @@ node --env-file=.env hermes.js --print MPC-12734   # show one bundle, send nothi
 An MPC with no MCS yet is skipped (no confeccionista to show it to). Unchanged bundles are not resent (`state.json` keeps a hash per MPC).
 
 ## Photos (Ropero → B2)
-For each reference of the MPC, Hermes asks Ropero `GET {ROPERO_URL}/techpack-images/{reference}`, downloads up to `PHOTOS_PER_REFERENCE` images and uploads them once to the private B2 bucket as `refs/{reference}/{file}` (inside the key's name prefix when the B2 key has one, e.g. `DISEXCLOVER/refs/...`; `b2.js`, native API, no dependencies). The bundle carries `photos: [{ reference, key, source }]`; Clover signs short-lived links to show them. Without `B2_*` the bundle goes without photos.
+For each reference of the MPC, Hermes asks Ropero `GET {ROPERO_URL}/techpack-images/{reference}`, downloads up to `PHOTOS_PER_REFERENCE` images and uploads them once to the private B2 bucket as `refs/{reference}/{file}` (inside the key's name prefix when the B2 key has one, e.g. `DISEXCLOVER/refs/...`; `b2.js`, native API, no dependencies). The bundle carries `photos: [{ reference, key, source }]`; Prisma Proveedores signs short-lived links to show them. Without `B2_*` the bundle goes without photos.
 
-## What it sends (Clover)
-`POST {CLOVER_URL}/api/hermes/production-orders` with `Authorization: Bearer {CLOVER_TOKEN}`:
+## What it sends (Prisma Proveedores)
+`POST {PROVEEDORES_URL}/api/hermes/production-orders` with `Authorization: Bearer {PROVEEDORES_TOKEN}`:
 
 ```
 {
@@ -40,7 +40,7 @@ For each reference of the MPC, Hermes asks Ropero `GET {ROPERO_URL}/techpack-ima
 }
 ```
 
-Clover must upsert by `production_order.document_number` and show each contract only to the supplier whose NIT it carries.
+Prisma Proveedores must upsert by `production_order.document_number` and show each contract only to the supplier whose NIT it carries.
 
 ## Observations
 Planners write the MPC notes by hand, with typos (`RECUEPRO`, `RESPOSO`, `PAQUEETS`). `observations.js` matches keywords by edit distance; on 612 real MPCs it places 98% of the 5,044 lines. Lines it does not recognize go to `other` untouched, and `raw` always carries the original text.
