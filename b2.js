@@ -16,7 +16,9 @@ async function authorize() {
   const storage = a.apiInfo.storageApi;
   let bucketId = storage.bucketId;
   if (!bucketId) bucketId = await findBucket(storage.apiUrl, a.authorizationToken, a.accountId, process.env.B2_BUCKET);
-  session = { apiUrl: storage.apiUrl, token: a.authorizationToken, bucketId, until: Date.now() + 20 * 3600e3 };
+  // A key restricted to a name prefix can only write under it: "DISEXCLOVER" -> "DISEXCLOVER/".
+  const prefix = storage.namePrefix ? storage.namePrefix.replace(/\/?$/, "/") : "";
+  session = { apiUrl: storage.apiUrl, token: a.authorizationToken, bucketId, prefix, until: Date.now() + 20 * 3600e3 };
   return session;
 }
 
@@ -32,9 +34,11 @@ async function findBucket(apiUrl, token, accountId, name) {
   return bucket.bucketId;
 }
 
-// Uploads a buffer under `key`. One upload URL per call keeps it simple; photos are few.
+// Uploads a buffer under `key` (inside the key's prefix, if any) and returns the B2 file
+// name. One upload URL per call keeps it simple; photos are few.
 async function upload(key, body, contentType) {
   const s = await authorize();
+  const name = `${s.prefix}${key}`;
   const res = await fetch(`${s.apiUrl}/b2api/v3/b2_get_upload_url`, {
     method: "POST",
     headers: { Authorization: s.token },
@@ -46,7 +50,7 @@ async function upload(key, body, contentType) {
     method: "POST",
     headers: {
       Authorization: target.authorizationToken,
-      "X-Bz-File-Name": encodeURIComponent(key).replace(/%2F/g, "/"),
+      "X-Bz-File-Name": encodeURIComponent(name).replace(/%2F/g, "/"),
       "Content-Type": contentType || "b2/x-auto",
       "X-Bz-Content-Sha1": crypto.createHash("sha1").update(body).digest("hex"),
     },
@@ -54,8 +58,11 @@ async function upload(key, body, contentType) {
     signal: AbortSignal.timeout(120_000),
   });
   if (!put.ok) throw new Error(`B2 upload ${put.status} ${(await put.text()).slice(0, 200)}`);
+  return name;
 }
+
+const fileName = async (key) => `${(await authorize()).prefix}${key}`;
 
 const enabled = () => Boolean(process.env.B2_KEY_ID && process.env.B2_APPLICATION_KEY && process.env.B2_BUCKET);
 
-module.exports = { enabled, upload };
+module.exports = { enabled, upload, fileName };

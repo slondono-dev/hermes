@@ -31,7 +31,7 @@ async function photosFor(order, uploaded) {
         await b2.upload(key, Buffer.from(await res.arrayBuffer()), res.headers.get("content-type"));
         uploaded.add(key);
       }
-      out.push({ reference, key, source: img.source_db || null });
+      out.push({ reference, key: await b2.fileName(key), source: img.source_db || null });
     }
   }
   return out;
